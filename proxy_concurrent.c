@@ -75,7 +75,7 @@ void *thread(void *vargs)
 {
   int p_connfd = (int)vargs;      // argument로 받은 것을 connfd에 넣는다
   Pthread_detach(pthread_self()); // 추가된 코드
-  do_it(p_connfd);
+  doit(p_connfd);
   Close(p_connfd);
   // connfd를 여러개로 만드는 이유? main 함수 while 돌 때마다 accept 쓰레드생성함수 호출되고,
   // 그 생성 함수에서 쓰레드함수 호출하는데 호출할 때마다 connfd가 연결됨. (클라 여러개!)

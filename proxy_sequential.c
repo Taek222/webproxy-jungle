@@ -29,7 +29,6 @@ void do_request(int p_clientfd, char *method, char *uri_ptos, char *host);
 void do_response(int p_connfd, int p_clientfd);
 int parse_uri(char *uri, char *uri_ptos, char *host, char *port);
 int parse_responsehdrs(rio_t *rp, int length);
-void *thread(void *vargsp); // 추가된 코드
 
 int main(int argc, char **argv)
 {
@@ -37,7 +36,6 @@ int main(int argc, char **argv)
   char hostname[MAXLINE], port[MAXLINE];
   socklen_t clientlen;
   struct sockaddr_storage clientaddr;
-  pthread_t tid; // 추가된 코드
 
   /* Check command line args */
   if (argc != 2)
@@ -59,28 +57,10 @@ int main(int argc, char **argv)
     Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
 
-    // do_it(p_connfd);
-    // Close(p_connfd);
-
-    // 첫 번째 인자 *thread: 쓰레드 식별자. 쓰레드마다 번호 줌
-    // 두 번째: 쓰레드 특성(속성) 지정 (기본: NULL)
-    // 세 번째: 쓰레드 함수 (쓰레드가 하고픈 일을 function으로 만들어 넣음)
-    // 네 번째: 쓰레드 함수의 매개변수 (그 function에 넣는 인자)
-    Pthread_create(&tid, NULL, thread, (void *)p_connfd); // 추가된 코드
+    do_it(p_connfd);
+    Close(p_connfd);
   }
   return 0;
-}
-
-void *thread(void *vargs)
-{
-  int p_connfd = (int)vargs;      // argument로 받은 것을 connfd에 넣는다
-  Pthread_detach(pthread_self()); // 추가된 코드
-  do_it(p_connfd);
-  Close(p_connfd);
-  // connfd를 여러개로 만드는 이유? main 함수 while 돌 때마다 accept 쓰레드생성함수 호출되고,
-  // 그 생성 함수에서 쓰레드함수 호출하는데 호출할 때마다 connfd가 연결됨. (클라 여러개!)
-  // 요청받으면 쓰레드 만들고, 이 쓰레드마다 connfd를 만든다. 그러면 프로세스는 하나인데 쓰레드 여러개 - 거기서 connfd쭈루룩.
-  // 그래서 main함수가 아닌 thread함수에 doit 이 있다!
 }
 
 /*
@@ -130,7 +110,7 @@ void do_request(int p_clientfd, char *method, char *uri_ptos, char *host)
 
   /* Read request headers */
   sprintf(buf, "GET %s %s\r\n", uri_ptos, new_version);   // GET /index.html HTTP/1.0
-  sprintf(buf, "%sHost: %s\r\n", buf, host);              // Host: www.google.com // 아니 여기서 출력이 왜 이렇게 됨? Host앞에 GET /index~ 라는 앞 줄 문장이 들어가야 하는거 아님? -> 한 문장씩 밑으로 추가되면서 버퍼가 업데이트 되는 거임
+  sprintf(buf, "%sHost: %s\r\n", buf, host);              // Host: www.google.com // 아니 여기서 출력이 왜 이렇게 됨? Host앞에 GET /index~ 라는 앞 줄 문장이 들어가야 하는거 아님?
   sprintf(buf, "%s%s", buf, user_agent_hdr);              // User-Agent: ~(bla bla)
   sprintf(buf, "%sConnections: close\r\n", buf);          // Connections: close
   sprintf(buf, "%sProxy-Connection: close\r\n\r\n", buf); // Proxy-Connection: close
